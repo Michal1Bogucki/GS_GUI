@@ -32,7 +32,7 @@ jobs:
         pushd emsdk-master
         source ./emsdk_env.sh
         popd
-        make -C examples/example_sdl2_opengl3 -f Makefile.emscripten
+        make -f Makefile.emscripten
         
 
 #    - name: Build example_emscripten_wgpu
@@ -49,14 +49,14 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Web files 
-        path: examples/example_sdl2_opengl3/web
+        path: web
         
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4.4.1
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: gh-pages
-        FOLDER: examples/example_sdl2_opengl3/web
+        FOLDER: web
           
       
 
