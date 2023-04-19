@@ -23,6 +23,7 @@ jobs:
       run:  git submodule update --init --recursive
     - name: Install Dependencies
       run: |
+        tree 
         wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
         tar -xvf master.tar.gz
         emsdk-master/emsdk update
