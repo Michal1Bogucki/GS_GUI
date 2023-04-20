@@ -35,7 +35,7 @@ jobs:
         pushd emsdk-master
         source ./emsdk_env.sh
         popd
-        make -f Makefile.emscripten
+        make -f Makefile
         
 
 #    - name: Build example_emscripten_wgpu
