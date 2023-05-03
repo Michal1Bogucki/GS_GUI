@@ -25,7 +25,6 @@ jobs:
         git submodule update --remote
     - name: Install Dependencies
       run: |
-        tree 
         wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
         tar -xvf master.tar.gz
         emsdk-master/emsdk update
@@ -62,6 +61,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: web
         FOLDER: web
-          
+        
       
 

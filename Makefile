@@ -85,8 +85,9 @@ $(WEB_DIR):
 serve: all
 	python3 -m http.server -d $(WEB_DIR)
 
+
 $(EXE): $(OBJS) $(WEB_DIR)
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
-
+	@echo  $(EXE)
 clean:
 	rm -rf $(OBJS) $(WEB_DIR)
