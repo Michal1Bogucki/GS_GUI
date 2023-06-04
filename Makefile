@@ -1,17 +1,93 @@
 #
-# Makefile to use with SDL+emscripten
-# See https://emscripten.org/docs/getting_started/downloads.html
-# for installation instructions.
+# Cross Platform Makefile
+# Compatible with MSYS2/MINGW, Ubuntu 14.04.1 and Mac OS X
 #
-# This Makefile assumes you have loaded emscripten's environment.
-# (On Windows, you may need to execute emsdk_env.bat or encmdprompt.bat ahead)
+# You will need SDL2 (http://www.libsdl.org):
+# Linux:
+#   apt-get install libsdl2-dev
+# Mac OS X:
+#   brew install sdl2
+# MSYS2:
+#   pacman -S mingw-w64-i686-SDL2
 #
-# Running `make -f Makefile.emscripten` will produce three files:
-#  - web/index.html
-#  - web/index.js
-#  - web/index.wasm
-#
-# All three are needed to run the demo.
+
+ifeq ($(TARGET_PLATFORM),standalone)
+	
+	EXE = example_sdl2_opengl3
+	IMGUI_DIR = ./imgui
+	SOURCES = main.cpp
+	SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
+	SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp $(IMGUI_DIR)/backends/imgui_impl_opengl3.cpp
+	OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
+	UNAME_S := $(shell uname -s)
+	LINUX_GL_LIBS = -lGL
+
+	CXXFLAGS = -std=c++11 -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
+	CXXFLAGS += -g -Wall -Wformat
+	LIBS =
+
+
+##---------------------------------------------------------------------
+## OPENGL ES
+##---------------------------------------------------------------------
+
+## This assumes a GL ES library available in the system, e.g. libGLESv2.so
+# CXXFLAGS += -DIMGUI_IMPL_OPENGL_ES2
+# LINUX_GL_LIBS = -lGLESv2
+## If you're on a Raspberry Pi and want to use the legacy drivers,
+## use the following instead:
+# LINUX_GL_LIBS = -L/opt/vc/lib -lbrcmGLESv2
+
+##---------------------------------------------------------------------
+## BUILD FLAGS PER PLATFORM
+##---------------------------------------------------------------------
+
+ifeq ($(UNAME_S), Linux) #LINUX
+	ECHO_MESSAGE = "Linux"
+	LIBS += $(LINUX_GL_LIBS) -ldl `sdl2-config --libs`
+
+	CXXFLAGS += `sdl2-config --cflags`
+	CFLAGS = $(CXXFLAGS)
+endif
+
+ifeq ($(UNAME_S), Darwin) #APPLE
+	ECHO_MESSAGE = "Mac OS X"
+	LIBS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo `sdl2-config --libs`
+	LIBS += -L/usr/local/lib -L/opt/local/lib
+
+	CXXFLAGS += `sdl2-config --cflags`
+	CXXFLAGS += -I/usr/local/include -I/opt/local/include
+	CFLAGS = $(CXXFLAGS)
+endif
+
+ifeq ($(OS), Windows_NT)
+    ECHO_MESSAGE = "MinGW"
+    LIBS += -lgdi32 -lopengl32 -limm32 `pkg-config --static --libs sdl2`
+
+    CXXFLAGS += `pkg-config --cflags sdl2`
+    CFLAGS = $(CXXFLAGS)
+endif
+
+
+%.o:%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(IMGUI_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(IMGUI_DIR)/backends/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+all: $(EXE)
+	@echo Build complete for $(ECHO_MESSAGE)
+
+$(EXE): $(OBJS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
+
+clean:
+	rm -f $(EXE) $(OBJS)
+
+else 
 
 CC = emcc
 CXX = em++
@@ -26,24 +102,9 @@ UNAME_S := $(shell uname -s)
 CPPFLAGS =
 LDFLAGS =
 EMS =
-
-##---------------------------------------------------------------------
-## EMSCRIPTEN OPTIONS
-##---------------------------------------------------------------------
-
-# ("EMS" options gets added to both CPPFLAGS and LDFLAGS, whereas some options are for linker only)
 EMS += -s USE_SDL=2
 EMS += -s DISABLE_EXCEPTION_CATCHING=1
 LDFLAGS += -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1
-
-# Uncomment next line to fix possible rendering bugs with Emscripten version older then 1.39.0 (https://github.com/ocornut/imgui/issues/2877)
-#EMS += -s BINARYEN_TRAP_MODE=clamp
-#EMS += -s SAFE_HEAP=1    ## Adds overhead
-
-# Emscripten allows preloading a file or folder to be accessible at runtime.
-# The Makefile for this example project suggests embedding the misc/fonts/ folder into our application, it will then be accessible as "/fonts"
-# See documentation for more details: https://emscripten.org/docs/porting/files/packaging_files.html
-# (Default value is 0. Set to 1 to enable file-system and include the misc/fonts/ folder as part of the build.)
 USE_FILE_SYSTEM ?= 0
 ifeq ($(USE_FILE_SYSTEM), 0)
 LDFLAGS += -s NO_FILESYSTEM=1
@@ -63,9 +124,6 @@ CPPFLAGS += -Wall -Wformat -Os $(EMS)
 LDFLAGS += --shell-file ./imgui/examples/libs/emscripten/shell_minimal.html
 LDFLAGS += $(EMS)
 
-##---------------------------------------------------------------------
-## BUILD RULES
-##---------------------------------------------------------------------
 
 %.o:%.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
@@ -91,3 +149,5 @@ $(EXE): $(OBJS) $(WEB_DIR)
 	@echo  $(EXE)
 clean:
 	rm -rf $(OBJS) $(WEB_DIR)
+
+endif

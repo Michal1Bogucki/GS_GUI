@@ -34,5 +34,5 @@
 *.tar*
 
 /emsdk-master
-
+/.vscode
 /web
